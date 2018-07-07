@@ -3,9 +3,11 @@ import slackclient
 import json
 import time
 import config
+from teams import *
 
 bot = slackclient.SlackClient(config.token)
 slack = Slacker(config.token)
+
 
 def get_data(type):
     data = {}
@@ -17,12 +19,13 @@ def get_data(type):
             data = json.load(file)
     return data
 
+
 def add_user(msg, user_id):
     user = slack.users.info(user_id).body['user']
     name = user['profile']['real_name']
     data_it = get_data('it')
     data_nonit = get_data('nonit')
-    if (data_it.get(user_id) == None) and (data_nonit.get(user_id) == None):
+    if (data_it.get(user_id) is None) and (data_nonit.get(user_id) is None):
         if msg == '/IT':
             data_it[user_id] = [name, 0]
             with open('it.json', 'w') as file:
@@ -31,9 +34,6 @@ def add_user(msg, user_id):
             data_nonit[user_id] = [name, 0]
             with open('nonit.json', 'w') as file:
                 json.dump(data_nonit, file)
-
-
-
 
 
 def main():
@@ -47,8 +47,11 @@ def main():
                     if message.split()[0] == '<@' + config.bot_id + '>':
                         if message.split()[1] == '/IT' or message.split()[1] == '/NONIT':
                             add_user(message.split(' ')[1], update['user'])
-                        #update['user']
-            #bot.rtm_send_message(update['channel'], update['text'])
+                    if message.split()[0] == '<@' + config.bot_id + '>':
+                        if message.split()[1] == '/make_teams':
+                            split_teams()
+                    # update['user']
+            # bot.rtm_send_message(update['channel'], update['text'])
             time.sleep(1)
 
 

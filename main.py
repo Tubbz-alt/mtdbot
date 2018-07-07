@@ -7,60 +7,78 @@ import config
 bot = slackclient.SlackClient(config.token)
 slack = Slacker(config.token)
 
-def get_data(type):
+def get_data(msg):
     data = {}
-    if type == 'it':
-        with open('it.json', 'r') as file:
-            data = json.load(file)
-    elif type == 'nonit':
-        with open('nonit.json', 'r') as file:
-            data = json.load(file)
-    elif type == 'masters':
-        with open('masters.json', 'r') as file:
-            data = json.load(file)
+    with open(msg + '.json', 'r') as file:
+        data = json.load(file)
     return data
 
+def get_name(id):
+    user = slack.users.info(id).body['user']
+    return user['profile']['real_name']
+
 def add_user(msg, user_id):
-    user = slack.users.info(user_id).body['user']
-    name = user['profile']['real_name']
-    data_it = get_data('it')
-    data_nonit = get_data('nonit')
+    name = get_name(user_id)
+    try:
+        data_it = get_data('IT')
+        data_nonit = get_data('NONIT')
+    except:
+        pass
+
     if data_it.get(user_id) is None and data_nonit.get(user_id) is None:
         if msg == '/IT':
-            data_it[user_id] = [name, 0]
-            with open('it.json', 'w') as file:
+            data_it[user_id] = name
+            with open('IT.json', 'w+') as file:
                 json.dump(data_it, file)
         elif msg == '/NONIT':
-            data_nonit[user_id] = [name, 0]
-            with open('nonit.json', 'w') as file:
+            data_nonit[user_id] = name
+            with open('NONIT.json', 'w+') as file:
                 json.dump(data_nonit, file)
 
-def add_master(msg, user_id, who):
+def add_admin(msg, user_id):
     print('function started')
-    who = who.replace('<', '').replace('>', '').replace('@', '')
-    data = get_data('masters')
+    data = get_data('admin')
     if msg == '/admin':
         if data.get('admin') is None:
             data['admin'] = user_id
-    elif msg == '/add_teacher' and data.get('admin') == user_id:
-        l = data.get('teachers')
-        if l is None:
-            data['teachers'] = [who]
-        else:
-            if user_id not in l:
-                l.append(who)
-                data['teachers'] = l
-    elif msg == '/add_ta' and data.get('admin') == user_id:
-        l = data.get('ta')
-        if l is None:
-            data['ta'] = [user_id]
-        else:
-            if user_id not in l:
-                l.append(user_id)
-                data['ta'] = l
-    with open('masters.json', 'w') as file:
+    with open('admin.json', 'w+') as file:
         json.dump(data, file)
 
+def create_channel(channel, teacher_id, ta_id, type):
+    teacher_id = teacher_id.replace('<', '').replace('>', '').replace('@', '')
+    ta_id = ta_id.replace('<', '').replace('>', '').replace('@', '')
+    channel = channel.replace('#', '')
+    teacher_name = get_name(teacher_id)
+    ta_name = get_name(ta_id)
+    data = {teacher_id: [teacher_name, -1], ta_id: [ta_name, -2], 'type': type}
+    channel = channel.split('|')[1].replace('>', '')
+    with open(channel + '.json', 'w+') as file:
+        json.dump(data, file)
+
+def update_channel(subject):
+    data = get_data(subject)
+    type = data.get('type')
+    if type == 'IT' or type == 'NONIT':
+        db = get_data(type)
+        for i in db:
+            if i not in data:
+                name = get_name(i)
+                data[i] = [name, 0]
+        with open(subject + '.json', 'w') as file:
+            json.dump(data, file)
+    elif type == 'BOTH':
+        db = get_data("IT")
+        for i in db:
+            if i not in data:
+                name = get_name(i)
+                data[i] = [name, 0]
+        db2 = get_data("IT")
+        for i in db2:
+            if i not in data:
+                name = get_name(i)
+                data[i] = [name, 0]
+        with open(subject + '.json', 'w') as file:
+            json.dump(data, file)
 
 
 def main():
@@ -76,14 +94,25 @@ def main():
                         if second == '/IT' or second == '/NONIT':
                             add_user(second, update['user'])
                         elif second == '/admin':
-                            add_master(second, update['user'], '')
-                        elif second == '/add_teacher' or second == '/add_ta':
-                            third = message[2]
-                            add_master(second, update['user'], third)
-                        #update['user']
-            #bot.rtm_send_message(update['channel'], update['text'])
-            time.sleep(1)
+                            add_admin(second, update['user'])
+                        elif second == '/set_channel': # check
+                            data = get_data('admin')
+                            if update['user'] in data.get('admin'):
+                                third = message[2]
+                                fourth = message[3]
+                                fifth = message[4]
+                                sixth = message[5]
+                                create_channel(third, fourth, fifth, sixth)
+                        elif second == '/update':
+                            data = get_data('admin')
+                            third = message[2].replace('#', '')
+                            third = third.split('|')[1].replace('>', '')
+                            if (update['user'] in data.get('admin')) or update['user'] in get_data.get(third):
+                                update_channel(third)
 
+
+
+            time.sleep(1)
 
 if __name__ == '__main__':
     main()

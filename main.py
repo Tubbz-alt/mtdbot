@@ -107,7 +107,7 @@ def main():
                             data = get_data('admin')
                             third = message[2].replace('#', '')
                             third = third.split('|')[1].replace('>', '')
-                            if (update['user'] in data.get('admin')) or update['user'] in get_data.get(third):
+                            if (update['user'] in data.get('admin')) or update['user'] in get_data(third).get(third):
                                 update_channel(third)
 
 

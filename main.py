@@ -47,9 +47,18 @@ def main():
                     if message.split()[0] == '<@' + config.bot_id + '>':
                         if message.split()[1] == '/IT' or message.split()[1] == '/NONIT':
                             add_user(message.split(' ')[1], update['user'])
-                    if message.split()[0] == '<@' + config.bot_id + '>':
                         if message.split()[1] == '/make_teams':
+                            #split_teams(mixed_teams=False)
                             split_teams()
+                        if message.split()[1] == '/get_teams':
+                            print('trying to upload file')
+                            get_teams_with_names()
+                            time.sleep(2)
+                            t = slack.files.upload('teams.txt',channels="#general")
+                            print(t.body)
+                            # bot.rtm_send_message("#general",t.body['file']['permalink'])
+
+
                     # update['user']
             # bot.rtm_send_message(update['channel'], update['text'])
             time.sleep(1)

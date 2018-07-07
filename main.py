@@ -7,9 +7,23 @@ from requests.sessions import Session
 slack = Slacker(config.token)
 
 # Send a message to #general channel
-slack.chat.post_message('#general', 'Hello fellow slackers!')
+#slack.chat.post_message('#general', 'Hey there!')
 
-# Get users list
 response = slack.users.list()
 users = response.body['members']
-print(users)
+msg = ''
+#for i in users:
+#    if not i['is_bot'] and i['name'] != 'slackbot':
+#        msg = msg + i['name'] + '\n'
+
+#slack.chat.post_message('@adl.absatov', users)
+
+# Get users list
+
+#print(slack.auth.test()) - информация о workspace
+#print(slack.channels.list()) - список всех каналов с информацией
+#print(slack.channels.info('CBL8D6XGC')) - информация о канале
+#print(slack.channels.history('CBL8D6XGC')) - история сообщений
+#print(slack.channels.replies('CBL8D6XGC')) - информация о тредах в чате/канале
+#chat.delete - удалить конкретное сообщение из чата
+#chat.getPermalink - получить ссылку на канал

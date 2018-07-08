@@ -70,12 +70,10 @@ def clear_teams():
     with open('teams.json', 'w') as file:
         json.dump({}, file)
 
-
 def merge_two_dicts(x, y):
     z = x.copy()
     z.update(y)
     return z
-
 
 def split_teams(mixed_teams=True):
     clear_teams()

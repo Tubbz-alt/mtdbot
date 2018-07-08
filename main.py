@@ -9,9 +9,12 @@ bot = slackclient.SlackClient(config.token)
 slack = Slacker(config.token)
 
 def get_data(msg):
-    with open(msg + '.json', 'r') as file:
-        data = json.load(file)
-    return data
+    try:
+        with open(msg + '.json', 'r') as file:
+            data = json.load(file)
+        return data
+    except:
+        pass
 
 def get_name(id):
     user = slack.users.info(id).body['user']
@@ -99,6 +102,21 @@ def transfer_coins(channel, id1, id2, coins):
         with open(channel + '.json', 'w') as file:
             json.dump(data, file)
 
+def my_coins(id):
+    msg = ''
+
+    for i in slack.channels.list().body['channels']:
+        if get_data(i['name']) != None:
+            if id in get_data('IT') and get_data(i['name']) != None and get_data(i['name']).get('type') != "NONIT":
+                msg += i['name'] + ": " + str(get_data(i['name'])[id][1])
+                msg += '\n'
+            elif id in get_data('NONIT') and get_data(i['name']).get('type') != "IT":
+                msg += i['name'] + ": " + str(get_data(i['name'])[id][1])
+                msg += '\n'
+
+    bot.rtm_send_message(id, msg)
+
+
 def main():
     if bot.rtm_connect():
         print('bot started...')
@@ -140,10 +158,9 @@ def main():
                         elif second == '/get_teams':
                             if update['user'] in get_data('admin').get('admin'):
                                 get_teams_with_names()
-                                time.sleep(2)
                                 data = get_data('admin')
                                 destination = data.get('admin')
-                                t = slack.files.upload('teams.txt', channels=destination)
+                                slack.files.upload('teams.txt', channels=destination)
                         elif second == '/add_coins':
                             for i in slack.channels.list().body['channels']:
                                 if i['id'].find(update['channel']) != -1:
@@ -164,8 +181,21 @@ def main():
                                     channel = i['name']
                                     transfer_coins(channel, update['user'], third, fourth)
                                     break
+                        elif second == '/my_team':
+                            data = get_data('teams')
+                            text = 'Hey! This is your team for the current week: \n'
+                            team = ''
+                            for i in data:
+                                if update['user'] in data[i]['members']:
+                                    team = data[i]['members']
+                                    break
+                            print(team)
+                            for i in team:
+                                text += get_name(i) + '\n'
+                            slack.chat.post_message(channel=update['user'], text = text)
+                            print('done')
                         elif second == '/my_coins':
-                            pass
+                            my_coins(update['user'])
             time.sleep(1)
 
 if __name__ == '__main__':

@@ -3,12 +3,12 @@ import slackclient
 import json
 import time
 import config
+from teams import *
 
 bot = slackclient.SlackClient(config.token)
 slack = Slacker(config.token)
 
 def get_data(msg):
-    data = {}
     with open(msg + '.json', 'r') as file:
         data = json.load(file)
     return data
@@ -45,6 +45,7 @@ def add_admin(msg, user_id):
         json.dump(data, file)
 
 def create_channel(channel, teacher_id, ta_id, type):
+    print('came2')
     teacher_id = teacher_id.replace('<', '').replace('>', '').replace('@', '')
     ta_id = ta_id.replace('<', '').replace('>', '').replace('@', '')
     channel = channel.replace('#', '')
@@ -52,6 +53,7 @@ def create_channel(channel, teacher_id, ta_id, type):
     ta_name = get_name(ta_id)
     data = {teacher_id: [teacher_name, -1], ta_id: [ta_name, -2], 'type': type}
     channel = channel.split('|')[1].replace('>', '')
+    print('came')
     with open(channel + '.json', 'w+') as file:
         json.dump(data, file)
 
@@ -80,6 +82,9 @@ def update_channel(subject):
         with open(subject + '.json', 'w') as file:
             json.dump(data, file)
 
+def ta_coins():
+    pass
+
 
 def main():
     if bot.rtm_connect():
@@ -107,11 +112,25 @@ def main():
                             data = get_data('admin')
                             third = message[2].replace('#', '')
                             third = third.split('|')[1].replace('>', '')
-                            if (update['user'] in data.get('admin')) or update['user'] in get_data.get(third):
+                            if (update['user'] in data.get('admin')) or update['user'] in get_data(third).get(third):
                                 update_channel(third)
+                        elif second == '/create_teams':
+                            try:
+                                third = message[2]
+                                if third == 'mixed':
+                                    split_teams()
+                                else:
+                                    split_teams(False)
+                            except:
+                                split_teams(False)
 
-
-
+                        elif second == '/get_teams':
+                            print('trying to upload file')
+                            get_teams_with_names()
+                            time.sleep(2)
+                            data = get_data('admin')
+                            destination = data.get('admin')
+                            t = slack.files.upload('teams.txt', channels=destination)
             time.sleep(1)
 
 if __name__ == '__main__':

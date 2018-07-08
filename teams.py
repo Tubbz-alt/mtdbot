@@ -36,14 +36,21 @@ def get_teams_with_names():
         for j in data[i]['members']:
 
             try:
-                members_names.append(data_it[j][0])
+                members_names.append(data_it[j])
             except:
-                members_names.append(data_nonit[j][0])
+                members_names.append(data_nonit[j])
 
         data[i]['members'] = members_names
-
+    text = ''
+    for i in data:
+        text += 'Team ' + str(int(i) + 1) + '\n'
+        text += '\n'
+        for j in data[i]['members']:
+            text += j + '\n'
+        text += '\n'
     with open('teams.txt', 'w') as file:
-        file.write(json.dumps(data, indent=4, sort_keys=True))
+        file.write(text)
+
 
 
 def add_team(team):

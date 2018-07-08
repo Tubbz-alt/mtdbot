@@ -7,10 +7,35 @@ def get_reviews():
         data = json.load(file)
     return data
 
+def get_pretty_reviews(id):
+    print("trying to return reviews")
+    print(id)
+    data = get_reviews()
+    data_it = get_data('IT')
+    data_nonit = get_data('NONIT')
+    text = ""
+
+    for i in data[id]:
+        text += "From: "
+        try:
+            text += data_it[i['from']]
+        except:
+            text += data_nonit[i['from']]
+        text += "\n"
+        text += i['body']
+        text += "\n \n \n"
+    with open('reviews.txt', 'w') as file:
+        file.write(text)
+
 
 def add_review(from_id, to_id, body):
     data = get_reviews()
-    data[to_id] = {'from': from_id, 'body': body}
+    try:
+        if data[to_id] is None:
+            data[to_id] = []
+    except:
+        data[to_id] = []
+    data[to_id].append({'from': from_id, 'body': body})
     with open('reviews.json', 'w') as file:
         json.dump(data, file)
 
@@ -149,6 +174,9 @@ def my_coins(user_id, channel):
 
 def main():
     if bot.rtm_connect():
+
+        print("bot has been started")
+
         while True:
 
             news = bot.rtm_read()
@@ -244,10 +272,26 @@ def main():
                                 teams = get_teams()
 
                                 for i in teams:
-                                    if id in teams[i]['members'] and update['user'] in teams[i]['members']:
+                                    if id in teams[i]['members'] and update['user'] in teams[i]['members'] and id != update['user']:
+                                        print("it works")
                                         add_review(update['user'], id, update['text'][update['text'].rindex(">") + 2:])
                             except:
                                 print("oops")
+
+                        elif second == "/get_reviews":
+                            if update['user'] in get_data('admin').get('admin'):
+                                try:
+                                    third = message[2]
+                                    get_pretty_reviews(third[2:-1])
+                                    time.sleep(2)
+                                    data = get_data('admin')
+                                    destination = data.get('admin')
+                                    slack.files.upload('reviews.txt', channels=destination)
+                                except:
+                                    pass
+
+
+
 
             time.sleep(1)
 

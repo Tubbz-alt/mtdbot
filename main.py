@@ -89,6 +89,16 @@ def add_coins(channel, id, coins):
         with open(channel + '.json', 'w') as file:
             json.dump(data, file)
 
+def transfer_coins(channel, id1, id2, coins):
+    data = get_data(channel)
+    id1 = id1.replace('<', '').replace('>', '').replace('@', '')
+    id2 = id2.replace('<', '').replace('>', '').replace('@', '')
+    if (id1 in data) and (id2 in data) and int(coins) <= 5 and int(coins) >= 1:
+        data.get(id2)[1] += int(coins)
+        data.get(id1)[1] -= int(coins)
+        with open(channel + '.json', 'w') as file:
+            json.dump(data, file)
+
 def main():
     if bot.rtm_connect():
         print('bot started...')
@@ -142,8 +152,18 @@ def main():
                                     channel = i['name']
                                     if get_data(channel)[update['user']][1] == 'ta':
                                         add_coins(channel, third, fourth)
+                                        break
                                     elif get_data(channel)[update['user']][1] == 't':
                                         add_coins(channel, third, fourth)
+                                        break
+                        elif second == '/give_coins':
+                            for i in slack.channels.list().body['channels']:
+                                if i['id'].find(update['channel']) != -1:
+                                    third = message[2]
+                                    fourth = message[3]
+                                    channel = i['name']
+                                    transfer_coins(channel, update['user'], third, fourth)
+                                    break
                         elif second == '/my_coins':
                             pass
             time.sleep(1)

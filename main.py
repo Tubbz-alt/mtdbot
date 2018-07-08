@@ -45,15 +45,13 @@ def add_admin(msg, user_id):
         json.dump(data, file)
 
 def create_channel(channel, teacher_id, ta_id, type):
-    print('came2')
     teacher_id = teacher_id.replace('<', '').replace('>', '').replace('@', '')
     ta_id = ta_id.replace('<', '').replace('>', '').replace('@', '')
     channel = channel.replace('#', '')
     teacher_name = get_name(teacher_id)
     ta_name = get_name(ta_id)
-    data = {teacher_id: [teacher_name, -1], ta_id: [ta_name, -2], 'type': type}
+    data = {teacher_id: [teacher_name, 't'], ta_id: [ta_name, 'ta'], 'type': type}
     channel = channel.split('|')[1].replace('>', '')
-    print('came')
     with open(channel + '.json', 'w+') as file:
         json.dump(data, file)
 
@@ -82,9 +80,14 @@ def update_channel(subject):
         with open(subject + '.json', 'w') as file:
             json.dump(data, file)
 
-def ta_coins():
-    pass
+def add_coins(channel, id, coins):
+    if int(coins) <= 15 and int(coins) >= -5:
+        id = id.replace('<', '').replace('>', '').replace('@', '')
+        data = get_data(channel)
+        data.get(id)[1] += int(coins)
 
+        with open(channel + '.json', 'w') as file:
+            json.dump(data, file)
 
 def main():
     if bot.rtm_connect():
@@ -100,7 +103,7 @@ def main():
                             add_user(second, update['user'])
                         elif second == '/admin':
                             add_admin(second, update['user'])
-                        elif second == '/set_channel': # check
+                        elif second == '/set_channel':
                             data = get_data('admin')
                             if update['user'] in data.get('admin'):
                                 third = message[2]
@@ -115,22 +118,34 @@ def main():
                             if (update['user'] in data.get('admin')) or update['user'] in get_data(third).get(third):
                                 update_channel(third)
                         elif second == '/create_teams':
-                            try:
-                                third = message[2]
-                                if third == 'mixed':
-                                    split_teams()
-                                else:
+                            if update['user'] in get_data('admin').get('admin'):
+                                try:
+                                    third = message[2]
+                                    if third == 'mixed':
+                                        split_teams()
+                                    else:
+                                        split_teams(False)
+                                except:
                                     split_teams(False)
-                            except:
-                                split_teams(False)
-
                         elif second == '/get_teams':
-                            print('trying to upload file')
-                            get_teams_with_names()
-                            time.sleep(2)
-                            data = get_data('admin')
-                            destination = data.get('admin')
-                            t = slack.files.upload('teams.txt', channels=destination)
+                            if update['user'] in get_data('admin').get('admin'):
+                                get_teams_with_names()
+                                time.sleep(2)
+                                data = get_data('admin')
+                                destination = data.get('admin')
+                                t = slack.files.upload('teams.txt', channels=destination)
+                        elif second == '/add_coins':
+                            for i in slack.channels.list().body['channels']:
+                                if i['id'].find(update['channel']) != -1:
+                                    third = message[2]
+                                    fourth = message[3]
+                                    channel = i['name']
+                                    if get_data(channel)[update['user']][1] == 'ta':
+                                        add_coins(channel, third, fourth)
+                                    elif get_data(channel)[update['user']][1] == 't':
+                                        add_coins(channel, third, fourth)
+                        elif second == '/my_coins':
+                            pass
             time.sleep(1)
 
 if __name__ == '__main__':

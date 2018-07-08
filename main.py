@@ -171,6 +171,27 @@ def my_coins(user_id, channel):
 
     bot.rtm_send_message(channel, msg)
 
+def show_lb(channel):
+
+    data = get_data(channel)
+    users = []
+    # print(data)
+
+    for i in data:
+        if i != 'type':
+            if type(data[i][1]) is int:
+                users.append([data[i][1], data[i][0]])
+
+    users.sort()
+    users.reverse()
+    print(users)
+
+    msg = ''
+
+    for i in users:
+        msg += i[1] + " " + str(i[0]) + "\n"
+
+    bot.rtm_send_message(channel, msg)
 
 def main():
     if bot.rtm_connect():
@@ -202,7 +223,14 @@ def main():
                                 fifth = message[4]
                                 sixth = message[5]
                                 create_channel(third, fourth, fifth, sixth)
-
+                                
+                        elif second == '/leaderboard':
+                            for i in slack.channels.list().body['channels']:
+                                if i['id'].find(update['channel']) != -1:
+                                    channel = i['name']
+                                    show_lb(channel)
+                                    break
+                                 
                         elif second == '/update':
                             data = get_data('admin')
                             third = message[2].replace('#', '')

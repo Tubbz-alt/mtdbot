@@ -1,5 +1,44 @@
 # Slack bot for MethodPro 2018
 
+## Installation instructions
+
+After installing Python and other required packages, you have to create a configuration
+file "config.py" at the root of the project. This file should have several constants:
+
+* BOT_TOKEN - slack bot's token, it can be shown in bot's settings page
+* BOT_ID - unique identifier of the bot, it is necessary for looking on appeal to the bot  
+* ADMIN_DATA - Dictionary object, which should have two fields, describes data for entering to the
+admin panel:
+  * login
+  * password
+
+Example of this config file:
+```python
+BOT_TOKEN = "xoxb-000000000000-000000000000-A1A1A1A1A1A1A1A1A1A1A1A1"
+BOT_ID = "AA00AAA0A"
+
+ADMIN_DATA = {
+    "login": "ADMIN",
+    "password": "VERYPROTECTEDPASSWORD"
+}
+```
+
+Then, to run a web-server, just run the next command:
+
+```
+python3 app.py
+```
+
+## Requirements
+
+* Python 3.7 +
+* Python packages (with versions, which are used in development):
+  * flask 1.0.3
+  * flask-basicauth 0.2.0
+  * flask-sqlalchemy 0.8.0
+  * phial-slack 0.9.0 (it also installs slackclient package)
+  * slacker 0.13.0
+
 ## Description of initial task
 
 **Features:**

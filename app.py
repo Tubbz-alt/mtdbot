@@ -3,6 +3,7 @@ from flask_basicauth import BasicAuth
 from flask_sqlalchemy import SQLAlchemy
 
 import config
+import service.BotRunningService
 
 app = Flask(
     __name__,
@@ -22,10 +23,12 @@ db.init_app(app)
 
 
 @basic_auth.required
-def catch_all(path):
+@app.route('/', methods=['GET'])
+def catch_all():
     return render_template('index.html')
-    # return 'You want path: %s' % path
 
 
 if __name__ == '__main__':
-    app.run(host=config.WEBSITE_HOST, port=config.WEBSITE_PORT, debug=True) # todo в продакшне убрать на false
+    service.BotRunningService.build_bot()
+    # todo в продакшне убрать на false
+    app.run(host=config.WEBSITE_HOST, port=config.WEBSITE_PORT, debug=False, use_reloader=False)

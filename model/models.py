@@ -8,7 +8,8 @@ from peewee import (
     TextField,
     TimeField,
     SmallIntegerField,
-    DoesNotExist
+    DoesNotExist,
+    BooleanField
 )
 from datetime import datetime as dt
 
@@ -67,6 +68,8 @@ class BaseModel(Model):
         database = db
 
 
+# todo создать прокси для работы с БД
+
 class Group(BaseModel):
     id = IntegerField(primary_key=True)
     name = CharField(null=False, unique=True)
@@ -89,6 +92,7 @@ class User(BaseModel):
     group = ForeignKeyField(Group, backref='users')
     coins = IntegerField(default=0)
     team = ForeignKeyField(Team, backref='members', null=True)
+    activated = BooleanField(default=True)
     created_at = TimestampField(default=dt.now())
     updated_at = TimestampField(default=dt.now())
 

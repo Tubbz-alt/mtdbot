@@ -3,6 +3,7 @@ from flask import Flask
 from flask_basicauth import BasicAuth
 
 import config
+from blueprints import main
 from model.models import (init_db)
 from service import MethodProBot
 
@@ -16,16 +17,20 @@ app = Flask(
 # Инициализация basic-auth для admin-панели
 app.config['BASIC_AUTH_USERNAME'] = config.ADMIN_DATA['login']
 app.config['BASIC_AUTH_PASSWORD'] = config.ADMIN_DATA['password']
+app.config['BASIC_AUTH_FORCE'] = True
+app.config['TEMPLATES_AUTO_RELOAD'] = config.DEBUG_MODE
 basic_auth = BasicAuth(app)
 
 # Инициализация БД
 app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_LOCATION
-if config.DEBUG_MODE:
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.DEBUG_MODE
 
 bot = MethodProBot(bot_id=config.BOT_ID, bot_token=config.BOT_TOKEN)
 
 init_db()
+
+# Регистрируем View'шки
+app.register_blueprint(main)
 
 
 def run():

@@ -1,11 +1,14 @@
 import string
 from datetime import datetime as dt
-from random import shuffle, sample, getrandbits, choice
+from random import sample, getrandbits, choice
 
-from peewee import IntegrityError, DoesNotExist, fn
+from peewee import IntegrityError, DoesNotExist
 
 import config
-from model import User, Group, Transaction, Team, TeamHistory
+from model import (
+    UserRepository,
+    TeamRepository
+)
 from util import Logger, Bot
 
 logger = Logger('MethodProBot')
@@ -32,12 +35,12 @@ class MethodProBot:
             logger.DEBUG(user_info['profile'])
 
             try:
-                user = User.create(
+                user = UserRepository.create_new_user(
                     display_name=user_info['profile']['display_name'],
                     slack_id=user_info['id'],
                     real_name=user_info['real_name'],
                     email=user_info['profile']['email'],
-                    group=Group.get(Group.name == 'IT')
+                    group_code='IT'
                 )
                 self.bot.send_message(
                     update['channel'],
@@ -64,12 +67,12 @@ class MethodProBot:
             logger.DEBUG(user_info['profile'])
 
             try:
-                user = User.create(
+                user = UserRepository.create_new_user(
                     display_name=user_info['profile']['display_name'],
                     slack_id=user_info['id'],
                     real_name=user_info['real_name'],
                     email=user_info['profile']['email'],
-                    group=Group.get(Group.name == 'NONIT')
+                    group_code='NONIT'
                 )
                 self.bot.send_message(
                     update['channel'],
@@ -103,12 +106,12 @@ class MethodProBot:
             logger.DEBUG(user_info['profile'])
 
             try:
-                user = User.create(
+                user = UserRepository.create_new_user(
                     display_name=user_info['profile']['display_name'],
                     slack_id=user_info['id'],
                     real_name=user_info['real_name'],
                     email=user_info['profile']['email'],
-                    group=Group.get(Group.name == 'TEACHER')
+                    group_code='TEACHER'
                 )
                 self.bot.send_message(
                     update['channel'],
@@ -122,25 +125,16 @@ class MethodProBot:
                         .format(user_info['id'])
                 )
 
-        @self.bot.command_handler("get_teams")
-        def get_teams(update):
-            teams = Team.select()
-            logger.DEBUG(teams)
-
-            text = ''
-            for team in teams:
-                logger.DEBUG(len(list(team.members)))
-                if len(list(team.members)) <= 0:
-                    continue
-                text += 'Team #' + str(team.id) + ':\n'
-                for member in team.members:
-                    text += '    ' + member.real_name + ', ' + member.display_name + '\n'
-                text += '\n'
-
-            with open('media/teams.txt', 'w+') as file:
-                file.write(text)
-
-            self.bot.send_file(update['channel'], 'media/teams.txt')
+        @self.bot.command_handler("test")
+        def create_test_user(update):
+            letters = string.ascii_lowercase
+            UserRepository.create_new_user(
+                display_name=''.join(choice(letters) for i in range(5)),
+                slack_id=''.join(choice(letters) for i in range(5)),
+                real_name=''.join(choice(letters) for i in range(5)),
+                email=''.join(choice(letters) for i in range(5)),
+                group_code='IT' if bool(getrandbits(1)) else 'NONIT'
+            )
 
         @self.bot.command_handler("ta")
         def put_user_to_ta_group(update, security_code):
@@ -162,12 +156,12 @@ class MethodProBot:
             logger.DEBUG(user_info['profile'])
 
             try:
-                user = User.create(
+                user = UserRepository.create_new_user(
                     display_name=user_info['profile']['display_name'],
                     slack_id=user_info['id'],
                     real_name=user_info['real_name'],
                     email=user_info['profile']['email'],
-                    group=Group.get(Group.name == 'TA')
+                    group_code='TA'
                 )
                 self.bot.send_message(
                     update['channel'],
@@ -180,6 +174,42 @@ class MethodProBot:
                     "Пользователь <@{}> уже присутствует в базе"
                         .format(user_info['id'])
                 )
+
+        # Информационные команды
+        @self.bot.command_handler("get_teams")
+        def get_teams(update):
+            teams = TeamRepository.get_all_teams()
+            logger.DEBUG(teams)
+
+            text = ''
+            for team in teams:
+                logger.DEBUG(len(list(team.members)))
+                if len(list(team.members)) <= 0:
+                    continue
+                text += 'Team #' + str(team.id) + ':\n'
+                for member in team.members:
+                    text += '    ' + member.real_name + ' (' + member.display_name + ')\n'
+                text += '\n'
+
+            with open('media/teams.txt', 'w+') as file:
+                file.write(text)
+
+            self.bot.send_file(update['channel'], 'media/teams.txt')
+
+        @self.bot.command_handler("coins")
+        def show_users_coins(update):
+            try:
+                user = UserRepository.get_user_by_slack_id(update['user'])
+            except DoesNotExist:
+                self.bot.send_message(
+                    update['channel'],
+                    "Пользователь не найден"
+                )
+                return
+            self.bot.send_message(
+                update['channel'],
+                "<@{}>, У вас {} коинов".format(update['user'], str(user.coins))
+            )
 
         @self.bot.command_handler("give_coins")
         def give_coins_to_another_user(update, userId, amount):
@@ -202,8 +232,8 @@ class MethodProBot:
 
             # Проверяем, есть ли оба в базе
             try:
-                author = User.get(User.slack_id == update['user'])
-                recipient = User.get(User.slack_id == userId[2:-1])
+                author = UserRepository.get_user_by_slack_id(update['user'])
+                recipient = UserRepository.get_user_by_slack_id(userId[2:-1])
             except DoesNotExist:
                 self.bot.send_message(
                     update['channel'],
@@ -248,7 +278,7 @@ class MethodProBot:
 
             # todo Проверка на текущий урок преподавателя
 
-            count_of_transactions = Transaction.select(fn.COUNT(Transaction.author == author)).scalar()
+            count_of_transactions = UserRepository.get_count_of_user_transactions(author.id)
             took = amount
 
             # Если инициатор - учитель или TA или сейчас пятая транзакция то транзакция безвозмездна
@@ -270,11 +300,11 @@ class MethodProBot:
             recipient.save()
 
             # Проводим транзакцию
-            Transaction.create(
-                author=author,
-                recipient=recipient,
-                took=took,
-                gave=amount
+            UserRepository.transfer_coins(
+                author_id=author.id,
+                recipient_id=recipient.id,
+                take=took,
+                give=amount
             )
 
             self.bot.send_message(
@@ -288,21 +318,6 @@ class MethodProBot:
                 )
             )
 
-        @self.bot.command_handler("coins")
-        def show_users_coins(update):
-            try:
-                user = User.get(User.slack_id == update['user'])
-            except DoesNotExist:
-                self.bot.send_message(
-                    update['channel'],
-                    "Пользователь не найден"
-                )
-                return
-            self.bot.send_message(
-                update['channel'],
-                "<@{}>, У вас {} коинов".format(update['user'], str(user.coins))
-            )
-
         @self.bot.command_handler("shuffle_teams")
         def shuffle_users_to_commands(update, security_code, mixed):
             """Перемешивание команд (потом будет только в админке)"""
@@ -314,13 +329,10 @@ class MethodProBot:
 
             mixed = (mixed == 'mixed')
 
-            it_group = Group.get(Group.name == "IT")
-            nonit_group = Group.get(Group.name == "NONIT")
-
-            it_users = list(User.select().where(User.group_id == it_group.id).order_by('RAND()'))
+            it_users = list(UserRepository.get_it_group_users_shuffled())
             logger.DEBUG(it_users)
 
-            nonit_users = list(User.select().where(User.group_id == nonit_group.id).order_by('RAND()'))
+            nonit_users = list(UserRepository.get_nonit_group_users_shuffled())
             logger.DEBUG(nonit_users)
 
             current_team = []
@@ -330,49 +342,21 @@ class MethodProBot:
                 for i, user in enumerate(it_users):
                     current_team.append(user)
                     if len(current_team) == config.TEAM_SIZE:
-                        team = Team.create()
-                        for member in current_team:
-                            member.team = team
-                            member.save()
-                            TeamHistory.create(
-                                user=member,
-                                team=team
-                            )
+                        TeamRepository.register_new_team(current_team)
                         current_team = []
 
                 if len(current_team) > 0:
-                    team = Team.create()
-                    for member in current_team:
-                        member.team = team
-                        member.save()
-                        TeamHistory.create(
-                            user=member,
-                            team=team
-                        )
+                    TeamRepository.register_new_team(current_team)
 
                 # Формируем NONIT команды
                 for i, user in enumerate(nonit_users):
                     current_team.append(user)
                     if len(current_team) == config.TEAM_SIZE:
-                        team = Team.create()
-                        for member in current_team:
-                            member.team = team
-                            member.save()
-                            TeamHistory.create(
-                                user=member,
-                                team=team
-                            )
+                        TeamRepository.register_new_team(current_team)
                         current_team = []
 
                 if len(current_team) > 0:
-                    team = Team.create()
-                    for member in current_team:
-                        member.team = team
-                        member.save()
-                        TeamHistory.create(
-                            user=member,
-                            team=team
-                        )
+                    TeamRepository.register_new_team(current_team)
 
                 self.bot.send_message(update['channel'], "Команды сформированы")
                 return
@@ -398,26 +382,10 @@ class MethodProBot:
                         nonit_users.remove(additional_user)
                     current_team += [additional_user]
 
-                team = Team.create()
-                for member in current_team:
-                    member.team = team
-                    member.save()
-                    TeamHistory.create(
-                        user=member,
-                        team=team
-                    )
+                TeamRepository.register_new_team(current_team)
 
             if len(it_users) > 0 or len(nonit_users) > 0:
-                current_team = it_users + nonit_users
-
-                team = Team.create()
-                for member in current_team:
-                    member.team = team
-                    member.save()
-                    TeamHistory.create(
-                        user=member,
-                        team=team
-                    )
+                TeamRepository.register_new_team(it_users + nonit_users)
 
             self.bot.send_message(update['channel'], "Команды сформированы")
 

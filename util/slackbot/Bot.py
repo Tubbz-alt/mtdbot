@@ -1,5 +1,4 @@
 import threading
-import time
 from inspect import signature
 
 from slackclient import SlackClient
@@ -17,7 +16,7 @@ logger = LogUtility.Logger("SlackBot")
 
 
 class Bot(object):
-    """Класс, описывающий общую концепцию взаимодействия с ботом"""
+    """Класс, описывающий общую концепцию взаимодействия /с ботом"""
 
     __error_placeholders = dict()
 
@@ -153,7 +152,6 @@ class Bot(object):
                                 )
 
                         self.handle_update(self, update)
-                time.sleep(1)
             except Exception as e:
                 logger.ERROR("We got an exception:")
                 logger.ERROR(e)

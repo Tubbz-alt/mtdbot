@@ -19,5 +19,7 @@ __all__ = [
     'init_db',
     'Team',
     'TeamHistory',
-    'db'
+    'db',
+    'TeamRepository',
+    'UserRepository'
 ]

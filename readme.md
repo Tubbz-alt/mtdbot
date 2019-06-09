@@ -78,7 +78,7 @@ python3 app.py
 * @\<BotUsername\> /coins - get user's coins
 * @\<BotUsername\> /give_coins @\<recipient\> \<amount\> - transaction  
 * @\<BotUsername\> /shuffle_teams \<SHUFFLE_SEC_CODE\> \<"mixed"\> - make teams, team size is defined in config.py. 
-    Mixed parameter - make teams of it and nonit users
+    Mixed parameter - make teams of it and nonit users. If you don't want mixed teams, just do not add this parameter
 
 ## Requirements
 

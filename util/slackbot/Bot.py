@@ -38,7 +38,7 @@ class Bot(object):
         self.__error_placeholders[InvalidNumberOfArguments.__name__] = "Команда {} принимает {} аргументов"
 
     def set_error_placeholder(self, error_type, message):
-        self.__error_placeholders[error_type] = message
+        self.__error_placeholders[error_type.__name__] = message
 
     def send_message(self, channel, message):
         """
@@ -115,6 +115,7 @@ class Bot(object):
                                 # Запускаем обработчик со всеми аргументами
                                 self.__command_handlers[message[1]](update, *message[2:len(message)])
                             except TypeError as e:
+                                logger.ERROR(e)
                                 self.__handle_error(
                                     BasicBotExceptionWrapper(
                                         message[1],
@@ -125,6 +126,7 @@ class Bot(object):
                                     update['channel']
                                 )
                             except Exception as e:
+                                logger.ERROR(e)
                                 self.__handle_error(BasicBotExceptionWrapper(message[1], e), update['channel'])
                         else:
                             self.__handle_error(

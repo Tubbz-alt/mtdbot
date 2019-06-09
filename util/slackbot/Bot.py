@@ -92,54 +92,59 @@ class Bot(object):
         logger.INFO("Bot listener has been started! Bot id: " + self.__bot_id)
 
         while self.__running:
-            news = self.__bot.rtm_read()
-            for update in news:
-                if ('type' in update) and (update['type'] == 'message'):
-                    message = update['text'].split(' ')
+            try:
+                news = self.__bot.rtm_read()
+                for update in news:
+                    if ('type' in update) and (update['type'] == 'message'):
+                        message = update['text'].split(' ')
 
-                    # Проверяем, идёт ли обращение к боту
-                    if message[0] == "<@" + self.__bot_id + ">":
-                        if message[1][0] != '/':
-                            self.__handle_error(
-                                BasicBotExceptionWrapper(
-                                    message[1],
-                                    InvalidCommandInvocation()
-                                ),
-                                update['channel']
-                            )
+                        if len(message) < 2:
                             continue
 
-                        # Если у нас есть обработчик на данную команду...
-                        if message[1] in self.__command_handlers:
-                            try:
-                                # Запускаем обработчик со всеми аргументами
-                                self.__command_handlers[message[1]](update, *message[2:len(message)])
-                            except TypeError as e:
-                                logger.ERROR(e)
+                        # Проверяем, идёт ли обращение к боту
+                        if message[0] == "<@" + self.__bot_id + ">":
+                            if message[1][0] != '/':
                                 self.__handle_error(
                                     BasicBotExceptionWrapper(
                                         message[1],
-                                        InvalidNumberOfArguments(
-                                            len(signature(self.__command_handlers[message[1]]).parameters)
-                                        )
+                                        InvalidCommandInvocation()
                                     ),
                                     update['channel']
                                 )
-                            except Exception as e:
-                                logger.ERROR(e)
-                                self.__handle_error(BasicBotExceptionWrapper(message[1], e), update['channel'])
-                        else:
-                            self.__handle_error(
-                                BasicBotExceptionWrapper(
-                                    message[1],
-                                    CommandNotFound())
-                                ,
-                                update['channel']
-                            )
+                                continue
 
-                    self.handle_update(self, update)
+                            # Если у нас есть обработчик на данную команду...
+                            if message[1] in self.__command_handlers:
+                                try:
+                                    # Запускаем обработчик со всеми аргументами
+                                    self.__command_handlers[message[1]](update, *message[2:len(message)])
+                                except TypeError as e:
+                                    logger.ERROR(e)
+                                    self.__handle_error(
+                                        BasicBotExceptionWrapper(
+                                            message[1],
+                                            InvalidNumberOfArguments(
+                                                len(signature(self.__command_handlers[message[1]]).parameters)
+                                            )
+                                        ),
+                                        update['channel']
+                                    )
+                                except Exception as e:
+                                    logger.ERROR(e)
+                                    self.__handle_error(BasicBotExceptionWrapper(message[1], e), update['channel'])
+                            else:
+                                self.__handle_error(
+                                    BasicBotExceptionWrapper(
+                                        message[1],
+                                        CommandNotFound())
+                                    ,
+                                    update['channel']
+                                )
 
-            time.sleep(1)
+                        self.handle_update(self, update)
+                        time.sleep(1)
+            except Exception as e:
+                pass
 
     def command_handler(self, name):
         """Декоратор для пометки методов, как обработчиков команд"""

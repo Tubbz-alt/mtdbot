@@ -34,22 +34,31 @@ file "config.py" at the root of the project. This file should have several const
 Example of this config file:
 ```python
 # -*- coding: utf-8 -*-
+import datetime
 
 WEBSITE_HOST = "0.0.0.0"
 WEBSITE_PORT = "8080"
 
 DB_LOCATION = "db.sqlite3"
 
-BOT_TOKEN = "xoxb-000000000000-000000000000-A1A1A1A1A1A1A1A1A1A1A1A1"
-BOT_ID = "AA00AAA0A"
+BOT_TOKEN = "xoxb-379975900519-655097542032-IosWNrYHNEHexLCx1MZArMLe"
+BOT_ID = "UK92VFY0Y"
 
-DEBUG_MODE = False
+DEBUG_MODE = True
+
+TEACHER_AUTH_CODE = "teacher"
+TA_AUTH_CODE = "ta"
 
 ADMIN_DATA = {
     "login": "ADMIN",
     "password": "VERYPROTECTEDPASSWORD"
 }
 
+ETUDE_PERIODS = {
+    "start": datetime.time(00, 00),
+    "end": datetime.time(23, 00),
+    "days": [True, True, True, True, True, True, True]
+}
 ```
 
 Then, to run a web-server, just execute the next command:
@@ -57,6 +66,14 @@ Then, to run a web-server, just execute the next command:
 ```
 python3 app.py
 ```
+
+## Commands
+* @<BotUsername> /it - register user in IT group
+* @<BotUsername> /nonit - register user in NONIT group
+* @<BotUsername> /teacher <TEACHER_AUTH_CODE> - register user in TEACHER group
+* @<BotUsername> /ta <TA_AUTH_CODE> - register user in TA group
+* @<BotUsername> /coins - get user's coins
+* @<BotUsername> /give_coins @\<recipient\> \<amount\> - transaction  
 
 ## Requirements
 

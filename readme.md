@@ -41,13 +41,16 @@ WEBSITE_PORT = "8080"
 
 DB_LOCATION = "db.sqlite3"
 
-BOT_TOKEN = "xoxb-379975900519-655097542032-IosWNrYHNEHexLCx1MZArMLe"
-BOT_ID = "UK92VFY0Y"
+BOT_TOKEN = "xoxb-000000000000-000000000000-abc0000000000"
+BOT_ID = "UK0000000"
 
 DEBUG_MODE = True
 
 TEACHER_AUTH_CODE = "teacher"
 TA_AUTH_CODE = "ta"
+SHUFFLE_SEC_CODE = "shuffle"
+
+TEAM_SIZE = 5
 
 ADMIN_DATA = {
     "login": "ADMIN",
@@ -68,12 +71,14 @@ python3 app.py
 ```
 
 ## Commands
-* @<BotUsername> /it - register user in IT group
-* @<BotUsername> /nonit - register user in NONIT group
-* @<BotUsername> /teacher <TEACHER_AUTH_CODE> - register user in TEACHER group
-* @<BotUsername> /ta <TA_AUTH_CODE> - register user in TA group
-* @<BotUsername> /coins - get user's coins
-* @<BotUsername> /give_coins @\<recipient\> \<amount\> - transaction  
+* @\<BotUsername\> /it - register user in IT group
+* @\<BotUsername\> /nonit - register user in NONIT group
+* @\<BotUsername\> /teacher \<TEACHER_AUTH_CODE\> - register user in TEACHER group
+* @\<BotUsername\> /ta \<TA_AUTH_CODE\> - register user in TA group
+* @\<BotUsername\> /coins - get user's coins
+* @\<BotUsername\> /give_coins @\<recipient\> \<amount\> - transaction  
+* @\<BotUsername\> /shuffle_teams \<SHUFFLE_SEC_CODE\> \<"mixed"\> - make teams, team size is defined in config.py. 
+    Mixed parameter - make teams of it and nonit users
 
 ## Requirements
 

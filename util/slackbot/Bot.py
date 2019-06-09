@@ -37,6 +37,9 @@ class Bot(object):
         self.__error_placeholders[InvalidCommandInvocation.__name__] = "Неправильный вызов команды"
         self.__error_placeholders[InvalidNumberOfArguments.__name__] = "Команда {} принимает {} аргументов"
 
+    def send_file(self, channel_id, filename):
+        self.__slack.files.upload(filename, channels=channel_id)
+
     def set_error_placeholder(self, error_type, message):
         self.__error_placeholders[error_type.__name__] = message
 
@@ -91,15 +94,23 @@ class Bot(object):
 
         logger.INFO("Bot listener has been started! Bot id: " + self.__bot_id)
 
+        # channels_list = self.get_channels_list()
+        #
+        # logger.DEBUG(channels_list)
+        # logger.DEBUG(channels_list[0]['id'])
+        #
+        # self.send_message(channels_list[0]['id'], 'Bot has been started!')
+
         while self.__running:
             try:
                 news = self.__bot.rtm_read()
                 for update in news:
+                    logger.DEBUG(update)
                     if ('type' in update) and (update['type'] == 'message'):
                         message = update['text'].split(' ')
 
-                        if len(message) < 2:
-                            continue
+                        # if len(message) < 2:
+                        #     continue
 
                         # Проверяем, идёт ли обращение к боту
                         if message[0] == "<@" + self.__bot_id + ">":
@@ -142,9 +153,10 @@ class Bot(object):
                                 )
 
                         self.handle_update(self, update)
-                        time.sleep(1)
+                time.sleep(1)
             except Exception as e:
-                pass
+                logger.ERROR("We got an exception:")
+                logger.ERROR(e)
 
     def command_handler(self, name):
         """Декоратор для пометки методов, как обработчиков команд"""
@@ -180,3 +192,6 @@ class Bot(object):
                     e.exception.number_of_arguments - 1
                 )
             )
+
+    def test(self, user_id):
+        return self.__slack.conversations.create("test", user_id, True)

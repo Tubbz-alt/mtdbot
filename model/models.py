@@ -8,7 +8,8 @@ from peewee import (
     TextField,
     TimeField,
     SmallIntegerField,
-    DoesNotExist)
+    DoesNotExist
+)
 from datetime import datetime as dt
 
 import config
@@ -16,7 +17,18 @@ import config
 db = SqliteDatabase(config.DB_LOCATION)
 
 
-def create_groups():
+def init_db():
+    db.connect()
+    db.create_tables([
+        User,
+        Group,
+        Transaction,
+        Commentary,
+        Lesson,
+        Team,
+        TeamHistory
+    ])
+
     try:
         Group.get(Group.name == 'IT')
     except DoesNotExist as e:
@@ -63,6 +75,11 @@ class Group(BaseModel):
     updated_at = TimestampField(default=dt.now())
 
 
+class Team(BaseModel):
+    id = IntegerField(primary_key=True)
+    created_at = TimestampField(default=dt.now())
+
+
 class User(BaseModel):
     id = IntegerField(primary_key=True)
     slack_id = CharField(index=True, unique=True)
@@ -71,8 +88,16 @@ class User(BaseModel):
     email = CharField(unique=True, index=True)
     group = ForeignKeyField(Group, backref='users')
     coins = IntegerField(default=0)
+    team = ForeignKeyField(Team, backref='members', null=True)
     created_at = TimestampField(default=dt.now())
     updated_at = TimestampField(default=dt.now())
+
+
+class TeamHistory(BaseModel):
+    id = IntegerField(primary_key=True)
+    user = ForeignKeyField(User, backref='teams_history')
+    team = ForeignKeyField(Team, backref='members_history')
+    created_at = TimestampField(default=dt.now())
 
 
 class Lesson(BaseModel):

@@ -37,9 +37,10 @@ class Logger:
     def ERROR(self, message, inner_tag=None):
         print("{} | ERROR   | ".format(dt.now().strftime('%d, %b %Y %H:%M:%S')) + str(self.__tag), end='')
 
-        if isinstance(message, Exception):
-            print()
-            print_exc(message)
+        # Увы, такая шняга убивает поток
+        # if isinstance(message, Exception):
+        #     print()
+        #     print_exc(message)
 
         if inner_tag is not None:
             print("." + inner_tag, end='')

@@ -1,16 +1,9 @@
 from flask import Flask
 # Инициализация Flask
 from flask_basicauth import BasicAuth
-from peewee import DoesNotExist
 
 import config
-from model.models import (
-    db,
-    User,
-    Group,
-    Transaction,
-    Commentary,
-    create_groups, Lesson)
+from model.models import (init_db)
 from service import MethodProBot
 
 app = Flask(
@@ -32,16 +25,7 @@ if config.DEBUG_MODE:
 
 bot = MethodProBot(bot_id=config.BOT_ID, bot_token=config.BOT_TOKEN)
 
-db.connect()
-db.create_tables([
-    User,
-    Group,
-    Transaction,
-    Commentary,
-    Lesson
-])
-
-create_groups()
+init_db()
 
 
 def run():

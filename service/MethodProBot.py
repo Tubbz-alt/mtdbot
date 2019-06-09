@@ -1,9 +1,11 @@
+import string
 from datetime import datetime as dt
+from random import shuffle, sample, getrandbits, choice
 
 from peewee import IntegrityError, DoesNotExist, fn
 
 import config
-from model import User, Group, Transaction
+from model import User, Group, Transaction, Team, TeamHistory
 from util import Logger, Bot
 
 logger = Logger('MethodProBot')
@@ -120,6 +122,26 @@ class MethodProBot:
                         .format(user_info['id'])
                 )
 
+        @self.bot.command_handler("get_teams")
+        def get_teams(update):
+            teams = Team.select()
+            logger.DEBUG(teams)
+
+            text = ''
+            for team in teams:
+                logger.DEBUG(len(list(team.members)))
+                if len(list(team.members)) <= 0:
+                    continue
+                text += 'Team #' + str(team.id) + ':\n'
+                for member in team.members:
+                    text += '    ' + member.real_name + ', ' + member.display_name + '\n'
+                text += '\n'
+
+            with open('media/teams.txt', 'w+') as file:
+                file.write(text)
+
+            self.bot.send_file(update['channel'], 'media/teams.txt')
+
         @self.bot.command_handler("ta")
         def put_user_to_ta_group(update, security_code):
             if security_code != config.TA_AUTH_CODE:
@@ -161,7 +183,7 @@ class MethodProBot:
 
         @self.bot.command_handler("give_coins")
         def give_coins_to_another_user(update, userId, amount):
-            """Проведение транзакцию"""
+            """Проведение транзакции"""
             # Разбираемся с форматом суммы транзакции
             try:
                 amount = int(amount)
@@ -195,111 +217,76 @@ class MethodProBot:
                 )
                 return
 
-            now = dt.now()
-
-            # todo Проверка на текущий урок преподавателя
-            # is_authors_lesson = Lesson.select().where(
-            #     (Lesson.teacher == author) &
-            #     (Lesson.start_time <= now.time()) &
-            #     (Lesson.end_time >= now.time()) &
-            #     (Lesson.weekday == now.weekday())
-            # )
-            #
-            # logger.DEBUG(is_authors_lesson)
-
-            # logger.DEBUG(is_authors_lesson.scalar())
-
-            if ((author.group.name == 'TEACHER') or (author.group.name == 'TA')) \
-                    and (0 < amount <= 20) \
-                    and author != recipient:
-                took = 0
-
-                author.coins -= took
-                author.save()
-
-                recipient.coins += amount
-                recipient.save()
-
-                # Проводим транзакцию
-                Transaction.create(
-                    author=author,
-                    recipient=recipient,
-                    took=took,
-                    gave=amount
-                )
-
+            if author == recipient:
                 self.bot.send_message(
                     update['channel'],
-                    "Транзакция от пользователя <@{}> пользователю <@{}> в размере {} - {} успешно завершена"
-                        .format(
-                        author.slack_id,
-                        recipient.slack_id,
-                        took,
-                        amount
-                    )
+                    "Инициатор транзакции также указан, как получатель"
                 )
                 return
 
+            if author.group.name != 'IT' and author.group.name != 'NONIT' \
+                    and recipient.group.name != 'IT' and recipient.group.name != 'NONIT':
+                self.bot.send_message(
+                    update['channel'],
+                    "Оба участника транзакции не являются стажерами"
+                )
+                return
 
-            # todo проверка на TA
+            now = dt.now()
 
-            # Проверка на этюды
+            # Проверка на этюд
             if (config.ETUDE_PERIODS['days'][now.weekday()]) \
                     and (config.ETUDE_PERIODS['start'] <= now.time() <= config.ETUDE_PERIODS['end']) \
                     and (author.group.name == 'IT' or author.group.name == 'NONIT') \
                     and (recipient.group.name == 'IT' or recipient.group.name == 'NONIT') \
-                    and (author != recipient) \
-                    and (0 < amount <= 5):
-
-                # Проверяем, какая по счёту транзакция у отправителя
-                count_of_transactions = Transaction.select(fn.COUNT(Transaction.author == author)).scalar()
-
-                if count_of_transactions % 4 == 0:
-                    took = 0
-                else:
-                    took = amount
-
-                if took > author.coins:
-                    self.bot.send_message(update['channel'],
-                                          "Недостаточное количество коинов для проведения транзакции")
-                    return
-
-                author.coins -= took
-                author.save()
-
-                recipient.coins += amount
-                recipient.save()
-
-                # Проводим транзакцию
-                Transaction.create(
-                    author=author,
-                    recipient=recipient,
-                    took=took,
-                    gave=amount
-                )
-
+                    and (0 > amount or amount > 5):
                 self.bot.send_message(
                     update['channel'],
-                    "Транзакция от пользователя <@{}> пользователю <@{}> в размере {} - {} успешно завершена"
-                        .format(
-                        author.slack_id,
-                        recipient.slack_id,
-                        took,
-                        amount
-                    )
+                    "Сумма транзакции больше 5"
                 )
                 return
-            else:
-                self.bot.send_message(
-                    update['channel'],
-                    "Одна из следующих ошибок:\n" +
-                    "• Сейчас не время этюда\n" +
-                    "• Не время занятия\n" +
-                    "• Участники транзакции не являются стажерами\n" +
-                    "• Автор является реципиентом\n" +
-                    "• Размер транзакции (во время этюда) составляет больше 5 коинов\n"
-                )
+
+            # todo Проверка на текущий урок преподавателя
+
+            count_of_transactions = Transaction.select(fn.COUNT(Transaction.author == author)).scalar()
+            took = amount
+
+            # Если инициатор - учитель или TA или сейчас пятая транзакция то транзакция безвозмездна
+            if (author.group.name == 'TEACHER' and 0 < amount <= 20) \
+                    or (author.group.name == 'TA' and 0 < amount <= 15) \
+                    or (count_of_transactions % 5 == 4):
+                took = 0
+
+            # Количество коинов
+            if took > author.coins:
+                self.bot.send_message(update['channel'],
+                                      "Недостаточное количество коинов для проведения транзакции")
                 return
+
+            author.coins -= took
+            author.save()
+
+            recipient.coins += amount
+            recipient.save()
+
+            # Проводим транзакцию
+            Transaction.create(
+                author=author,
+                recipient=recipient,
+                took=took,
+                gave=amount
+            )
+
+            self.bot.send_message(
+                update['channel'],
+                "Транзакция от пользователя <@{}> пользователю <@{}> в размере {} - {} успешно завершена"
+                    .format(
+                    author.slack_id,
+                    recipient.slack_id,
+                    took,
+                    amount
+                )
+            )
 
         @self.bot.command_handler("coins")
         def show_users_coins(update):
@@ -316,6 +303,123 @@ class MethodProBot:
                 "<@{}>, У вас {} коинов".format(update['user'], str(user.coins))
             )
 
+        @self.bot.command_handler("shuffle_teams")
+        def shuffle_users_to_commands(update, security_code, mixed):
+            """Перемешивание команд (потом будет только в админке)"""
+            if security_code != config.SHUFFLE_SEC_CODE:
+                self.bot.send_message(
+                    update['channel'],
+                    "Неверный код"
+                )
+
+            mixed = (mixed == 'mixed')
+
+            it_group = Group.get(Group.name == "IT")
+            nonit_group = Group.get(Group.name == "NONIT")
+
+            it_users = list(User.select().where(User.group_id == it_group.id).order_by('RAND()'))
+            logger.DEBUG(it_users)
+
+            nonit_users = list(User.select().where(User.group_id == nonit_group.id).order_by('RAND()'))
+            logger.DEBUG(nonit_users)
+
+            current_team = []
+
+            if not mixed:
+                # Формируем IT команды
+                for i, user in enumerate(it_users):
+                    current_team.append(user)
+                    if len(current_team) == config.TEAM_SIZE:
+                        team = Team.create()
+                        for member in current_team:
+                            member.team = team
+                            member.save()
+                            TeamHistory.create(
+                                user=member,
+                                team=team
+                            )
+                        current_team = []
+
+                if len(current_team) > 0:
+                    team = Team.create()
+                    for member in current_team:
+                        member.team = team
+                        member.save()
+                        TeamHistory.create(
+                            user=member,
+                            team=team
+                        )
+
+                # Формируем NONIT команды
+                for i, user in enumerate(nonit_users):
+                    current_team.append(user)
+                    if len(current_team) == config.TEAM_SIZE:
+                        team = Team.create()
+                        for member in current_team:
+                            member.team = team
+                            member.save()
+                            TeamHistory.create(
+                                user=member,
+                                team=team
+                            )
+                        current_team = []
+
+                if len(current_team) > 0:
+                    team = Team.create()
+                    for member in current_team:
+                        member.team = team
+                        member.save()
+                        TeamHistory.create(
+                            user=member,
+                            team=team
+                        )
+
+                self.bot.send_message(update['channel'], "Команды сформированы")
+                return
+
+            while len(it_users) > int(config.TEAM_SIZE / 2) and len(nonit_users) > int(config.TEAM_SIZE / 2):
+                it_part = sample(it_users, int(config.TEAM_SIZE / 2))
+                nonit_part = sample(nonit_users, int(config.TEAM_SIZE / 2))
+
+                for i in it_part:
+                    it_users.remove(i)
+
+                for i in nonit_part:
+                    nonit_users.remove(i)
+
+                current_team = it_part + nonit_part
+
+                if config.TEAM_SIZE % 2 != 0:
+                    if bool(getrandbits(1)):
+                        additional_user = choice(it_users)
+                        it_users.remove(additional_user)
+                    else:
+                        additional_user = choice(nonit_users)
+                        nonit_users.remove(additional_user)
+                    current_team += [additional_user]
+
+                team = Team.create()
+                for member in current_team:
+                    member.team = team
+                    member.save()
+                    TeamHistory.create(
+                        user=member,
+                        team=team
+                    )
+
+            if len(it_users) > 0 or len(nonit_users) > 0:
+                current_team = it_users + nonit_users
+
+                team = Team.create()
+                for member in current_team:
+                    member.team = team
+                    member.save()
+                    TeamHistory.create(
+                        user=member,
+                        team=team
+                    )
+
+            self.bot.send_message(update['channel'], "Команды сформированы")
 
     def run(self):
         self.bot.run()

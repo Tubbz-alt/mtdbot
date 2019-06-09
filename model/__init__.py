@@ -5,7 +5,9 @@ from model.models import (
     Transaction,
     Commentary,
     Lesson,
-    create_groups
+    Team,
+    TeamHistory,
+    init_db
 )
 
 __all__ = [
@@ -14,6 +16,8 @@ __all__ = [
     'Group',
     'User',
     'Lesson',
-    'create_groups',
+    'init_db',
+    'Team',
+    'TeamHistory',
     'db'
 ]

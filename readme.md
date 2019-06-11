@@ -19,6 +19,10 @@ Press "Add Configuration" button and follow instructions
 Bot token is here, on the bot configuration page
 ![4](https://semior001.github.io/mtdpro_slackbot/bot_token.png)
 
+Bot ID you can find in on the slack [API testing page](https://api.slack.com/methods/auth.test/test).
+Just put your bot token in the field named "token" and find bot id in response, near by "user_id"
+![5](https://semior001.github.io/mtdpro_slackbot/bot_id.png)
+
 ### Configuration of python application
 
 After installing Python and other required packages, you have to create a configuration

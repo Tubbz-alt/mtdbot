@@ -16,6 +16,9 @@ Press "Add Configuration" button and follow instructions
 
 ![3](https://semior001.github.io/mtdpro_slackbot/new_bot.png)
 
+Bot token is here, on the bot configuration page
+![4](https://semior001.github.io/mtdpro_slackbot/bot_token.png)
+
 ### Configuration of python application
 
 After installing Python and other required packages, you have to create a configuration
